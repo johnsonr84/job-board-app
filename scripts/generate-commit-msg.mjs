@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * Generates a copyable conventional commit message for staged files.
- * Run: npm run staged
- * Output is suitable for: git commit -m "$(npm run staged --silent)"
+ *
+ * Usage:
+ *   npm run staged          — print message (copy and paste into git commit)
+ *   git commit -m "$(npm run staged --silent)"  — use first line only
  */
 
 import { execSync } from "child_process";
@@ -18,13 +20,20 @@ if (STAGED.length === 0) {
 }
 
 function scopeFromPath(path) {
-  const top = path.split("/")[0];
+  const parts = path.split("/");
+  const top = parts[0];
   const map = {
     app: "app",
     components: "ui",
     convex: "convex",
     lib: "lib",
+    scripts: "scripts",
   };
+  if (top === "app" && parts[1] === "company") return "company";
+  if (top === "app" && parts[1]) {
+    const segment = parts[1];
+    return segment.startsWith("(") && segment.endsWith(")") ? segment.slice(1, -1) : segment;
+  }
   return map[top] || top;
 }
 
@@ -55,7 +64,8 @@ const bullets = STAGED.map((p) => `- ${shortLabel(p)}`).slice(0, 8);
 const needBullets = STAGED.length > 1 && STAGED.length <= 10;
 
 const scopePart = scope ? `(${scope})` : "";
-const firstLine = `${primaryType}${scopePart}: update ${scope || "staged"} files`;
+const subject = scope ? `${scope} files` : "staged files";
+const firstLine = `${primaryType}${scopePart}: update ${subject}`;
 
 if (needBullets) {
   console.log([firstLine, "", ...bullets].join("\n"));
